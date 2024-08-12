@@ -146,13 +146,19 @@ export const createPortElement = (x: number, y: number, paper: dia.Paper) => {
                 "font-size": 14,
                 "font-weight": "bold",
                 fill: "#333333",
+                "text-anchor": "middle",
+                "ref-x": 0.5,
+                "ref-y": 0.5,
+                "y-alignment": "middle",
+                "x-alignment": "middle",
+              
             },
             ".body": {
                 display: "none",
             },
         },
-        size: { width: 50, height: 20 }, // Увеличен размер элемента для лучшей видимости
-        portMarkup: '<g class="port"><circle class="port-body" r="10" fill="#000000" /></g>', // Цвет портов
+        size: { width: 70, height: 20 },
+        portMarkup: '<g class="port"><circle class="port-body" r="10" fill="#000000" /></g>',
         inPorts: [""],
     });
 

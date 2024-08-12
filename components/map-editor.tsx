@@ -70,8 +70,8 @@ const MapEditor = () => {
   }, [map])
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden">
-      <div className="flex flex-col flex-grow overflow-hidden">
+    <div className="flex flex-col h-full w-full overflow-hidden relative">
+      <div className="flex flex-col flex-grow overflow-hidden relative">
         {map ? (
           <TransformWrapper
             minScale={0.05}
@@ -109,19 +109,9 @@ const MapEditor = () => {
                 alignItems: "center",
                 justifyContent: "center",
                 overflow: "hidden",
+                position: "relative", // Ensure relative positioning for contained elements
               }}
             >
-              <MapCanvas
-                className="absolute z-30 h-full w-full"
-                mouseMode={mouseMode}
-                setMouseMode={setMouseMode}
-                setPanZoomEnabled={setPanZoomEnabled}
-                onMapObjectDoubleClick={(mapObject) => {
-                  if (mapObject.type === MapObjectType.STAIRS) {
-                  }
-                }}
-              />
-
               <div
                 ref={svgRef}
                 dangerouslySetInnerHTML={{ __html: map }}
@@ -133,6 +123,18 @@ const MapEditor = () => {
                   maxWidth: "100%",
                   maxHeight: "100%",
                   overflow: "hidden",
+                }}
+              />
+
+              <MapCanvas
+                className="absolute inset-0 z-30"
+                mouseMode={mouseMode}
+                setMouseMode={setMouseMode}
+                setPanZoomEnabled={setPanZoomEnabled}
+                onMapObjectDoubleClick={(mapObject) => {
+                  if (mapObject.type === MapObjectType.STAIRS) {
+                    // Handle double click on map object
+                  }
                 }}
               />
             </TransformComponent>
