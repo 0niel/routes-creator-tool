@@ -8,7 +8,7 @@ import { dia } from 'jointjs'
 import 'jointjs/css/layout.css'
 import 'jointjs/css/themes/modern.css'
 import 'jointjs/dist/joint.css'
-import { debounce } from 'lodash' // Подключаем lodash для использования debounce
+import { debounce } from 'lodash'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { setupCanvasEvents } from './canvas-event-handlers'
 
