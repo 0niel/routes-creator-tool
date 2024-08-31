@@ -1,6 +1,5 @@
-import { MainMenu } from "@/components/main-menu"
-import MapEditor from "@/components/map-editor"
-import Image from "next/image"
+import { MainMenu } from '@/components/main-menu'
+import MapEditor from '@/components/map-editor'
 
 export default function Home() {
   return (
