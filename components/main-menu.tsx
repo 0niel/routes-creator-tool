@@ -110,6 +110,8 @@ export const MainMenu: React.FC = () => {
 
   const handleRoutesExport = () => {
     try {
+      console.log('Exporting routes...')
+      console.log('figmaMapConfig.stairsRefs', figmaMapConfig.stairsRefs)
       const generated = generateGraph(
         jointCanvas.graph,
         figmaMapConfig.stairsRefs

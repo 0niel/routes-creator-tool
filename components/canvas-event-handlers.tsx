@@ -3,6 +3,7 @@ import { createPortElement, getLinkToolsView } from '@/lib/joint-utils'
 import { MouseMode } from '@/lib/mouse-mode'
 import { getMapObjectByElement } from '@/lib/utils'
 import { dia } from 'jointjs'
+import { debounce } from 'lodash'
 
 interface SetupCanvasEventsProps {
   setPanZoomEnabled: (enabled: boolean) => void
@@ -22,6 +23,26 @@ export const setupCanvasEvents = (
     mouseModeRef
   }: SetupCanvasEventsProps
 ) => {
+  const handlePointerMove = debounce((cellView: dia.CellView) => {
+    console.log('cell:pointermove')
+    const rect = cellView.el.getBoundingClientRect()
+    const elements = document.elementsFromPoint(rect.left, rect.top)
+
+    for (const el of elements) {
+      const mapObject = getMapObjectByElement(el, mapConfigRef)
+      if (mapObject) {
+        cellView.model.attr({
+          '.id': {
+            text: mapObject.id || ''
+          },
+          '.label': {
+            text: mapObject.name || ''
+          }
+        })
+      }
+    }
+  }, 100) // 100 мс задержка
+
   paper.on({
     'blank:pointerdown': (evt: dia.Event, x: number, y: number) => {
       if (mouseModeRef.current === MouseMode.CREATE_PORT && evt.button === 0) {
@@ -32,20 +53,7 @@ export const setupCanvasEvents = (
       }
     },
     'cell:pointerup blank:pointerup': () => setPanZoomEnabled(false),
-    'cell:pointermove': (cellView: dia.CellView) => {
-      const rect = cellView.el.getBoundingClientRect()
-      const elements = document.elementsFromPoint(rect.left, rect.top)
-
-      for (const el of elements) {
-        const mapObject = getMapObjectByElement(el, mapConfigRef)
-        if (mapObject) {
-          cellView.model.attr({
-            '.id/text': mapObject.id || '',
-            '.label/text': mapObject.name || ''
-          })
-        }
-      }
-    },
+    'cell:pointermove': handlePointerMove,
     'link:mouseenter': (linkView: dia.LinkView) =>
       linkView.addTools(getLinkToolsView()),
     'link:mouseleave': (linkView: dia.LinkView) => linkView.removeTools(),

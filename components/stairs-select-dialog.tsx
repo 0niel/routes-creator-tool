@@ -2,7 +2,7 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
+  AccordionTrigger,
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,13 +10,13 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { MapObject, MapObjectType } from '@/lib/figma-map-config'
 import { StairsRef, useMapConfigStore } from '@/lib/stores/map-config-store'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ScrollArea } from './ui/scroll-area'
 
 interface MapToolsDialogProps {
@@ -28,86 +28,59 @@ interface MapToolsDialogProps {
 const StairsSelectDialog: React.FC<MapToolsDialogProps> = ({
   selectedStairsMapObject,
   open,
-  setOpen
+  setOpen,
 }) => {
   const figmaMapConfig = useMapConfigStore()
 
-  const [selectedOtherStairsIds, setSelectedOtherStairsIds] = useState<
-    string[]
-  >([])
-
-  const mapConfig = useMapConfigStore()
-  const mapConfigRef = useRef(mapConfig)
+  const [selectedOtherStairsIds, setSelectedOtherStairsIds] = useState<string[]>([])
+  const [stairsRefs, setStairsRefs] = useState<StairsRef[]>([])
 
   useEffect(() => {
-    mapConfigRef.current = mapConfig
-    console.log('mapConfigRef.current', mapConfigRef.current)
-  }, [mapConfig])
+    const cachedStairsRefs = localStorage.getItem('stairsRefs')
+    if (cachedStairsRefs) {
+      const parsedStairsRefs = JSON.parse(cachedStairsRefs) as StairsRef[]
+      setStairsRefs(parsedStairsRefs)
+    }
+  }, [])
 
   useEffect(() => {
     if (selectedStairsMapObject) {
-      const cachedStairsRefs = localStorage.getItem('stairsRefs')
-      if (cachedStairsRefs) {
-        const parsedStairsRefs = JSON.parse(cachedStairsRefs) as StairsRef[]
-        mapConfigRef.current.setStairsRefs(parsedStairsRefs)
-      }
-
-      const stairsRefs = mapConfigRef.current.stairsRefs
-
       const stairsRef = stairsRefs.find(
-        stairsRef => stairsRef.fromId === selectedStairsMapObject.id
+        (stairsRef) => stairsRef.fromId === selectedStairsMapObject.id
       )
-
       if (stairsRef) {
         setSelectedOtherStairsIds(stairsRef.toIds)
       } else {
         setSelectedOtherStairsIds([])
       }
     }
-  }, [selectedStairsMapObject])
+  }, [selectedStairsMapObject, stairsRefs])
 
   const handleOk = () => {
     if (selectedStairsMapObject) {
-      const stairsRefs = mapConfigRef.current.stairsRefs
-
-      const stairsRef = stairsRefs.find(
-        stairsRef => stairsRef.fromId === selectedStairsMapObject.id
+      const updatedStairsRefs = stairsRefs.map((stairsRef) =>
+        stairsRef.fromId === selectedStairsMapObject.id
+          ? { ...stairsRef, toIds: selectedOtherStairsIds }
+          : stairsRef
       )
 
-      if (stairsRef) {
-        mapConfigRef.current.setStairsRefs(
-          mapConfigRef.current.stairsRefs.map(stairsRef => {
-            if (stairsRef.fromId === selectedStairsMapObject.id) {
-              return {
-                ...stairsRef,
-                toIds: selectedOtherStairsIds
-              }
-            }
-            return stairsRef
-          })
-        )
-      } else {
-        mapConfigRef.current.setStairsRefs([
-          ...mapConfigRef.current.stairsRefs,
-          {
-            fromId: selectedStairsMapObject.id,
-            toIds: selectedOtherStairsIds
-          } as unknown as StairsRef
-        ])
+      if (!stairsRefs.some((stairsRef) => stairsRef.fromId === selectedStairsMapObject.id)) {
+        updatedStairsRefs.push({
+          fromId: selectedStairsMapObject.id,
+          toIds: selectedOtherStairsIds,
+        } as StairsRef)
       }
 
-      // Сохранение в кэш
-      localStorage.setItem(
-        'stairsRefs',
-        JSON.stringify(mapConfigRef.current.stairsRefs)
-      )
+      setStairsRefs(updatedStairsRefs)
+      figmaMapConfig.setStairsRefs(updatedStairsRefs)
+      localStorage.setItem('stairsRefs', JSON.stringify(updatedStairsRefs))
     }
     setOpen(false)
   }
 
   const handleClearCache = () => {
     localStorage.removeItem('stairsRefs')
-    mapConfigRef.current.setStairsRefs([])
+    setStairsRefs([])
     setSelectedOtherStairsIds([])
   }
 
@@ -123,7 +96,7 @@ const StairsSelectDialog: React.FC<MapToolsDialogProps> = ({
       const file = e.target.files?.[0]
       if (!file) return
       const reader = new FileReader()
-      reader.onload = e => {
+      reader.onload = (e) => {
         if (!e.target?.result) return
         setImportData(e.target.result.toString())
 
@@ -131,13 +104,9 @@ const StairsSelectDialog: React.FC<MapToolsDialogProps> = ({
           stairsRefs: StairsRef[]
         }
 
-        console.log('dataToImport', dataToImport)
-
-        mapConfigRef.current.setStairsRefs(dataToImport.stairsRefs)
-        localStorage.setItem(
-          'stairsRefs',
-          JSON.stringify(dataToImport.stairsRefs)
-        )
+        setStairsRefs(dataToImport.stairsRefs)
+        figmaMapConfig.setStairsRefs(dataToImport.stairsRefs)
+        localStorage.setItem('stairsRefs', JSON.stringify(dataToImport.stairsRefs))
       }
       reader.readAsText(file)
     } catch (error) {
@@ -147,13 +116,13 @@ const StairsSelectDialog: React.FC<MapToolsDialogProps> = ({
 
   const handleExport = () => {
     const dataToExport = {
-      stairsRefs: mapConfigRef.current.stairsRefs
+      stairsRefs: stairsRefs,
     }
     const exportedData = JSON.stringify(dataToExport)
 
     const element = document.createElement('a')
     const file = new Blob([exportedData], {
-      type: 'application/json'
+      type: 'application/json',
     })
     element.href = URL.createObjectURL(file)
     element.download = 'stairs.json'
@@ -165,32 +134,34 @@ const StairsSelectDialog: React.FC<MapToolsDialogProps> = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Выберите куда ведёт эта лестница</DialogTitle>
+          <DialogTitle>Выберите куда ведёт этот объект</DialogTitle>
         </DialogHeader>
 
         <Input
           type="text"
           placeholder="Фильтр"
           value={filter}
-          onChange={e => setFilter(e.target.value)}
+          onChange={(e) => setFilter(e.target.value)}
         />
 
         <ScrollArea className="mt-4 h-96">
           {figmaMapConfig.config.objects
-            .filter(object => object.type === MapObjectType.STAIRS)
-            .filter(object => object.id !== selectedStairsMapObject?.id)
-            .filter(object => object.id.includes(filter))
-            .map(object => (
-              <div
-                key={object.id}
-                className="flex items-center justify-between"
-              >
+            .filter(
+              (object) =>
+                object.type === MapObjectType.STAIRS ||
+                object.type == MapObjectType.TRANSITION ||
+                object.type == MapObjectType.ELEVATOR
+            )
+            .filter((object) => object.id !== selectedStairsMapObject?.id)
+            .filter((object) => object.id.includes(filter))
+            .map((object) => (
+              <div key={object.id} className="flex items-center justify-between">
                 {selectedOtherStairsIds.includes(object.id) ? (
                   <Button
                     variant="destructive"
                     onClick={() =>
                       setSelectedOtherStairsIds(
-                        selectedOtherStairsIds.filter(id => id !== object.id)
+                        selectedOtherStairsIds.filter((id) => id !== object.id)
                       )
                     }
                   >
@@ -219,9 +190,9 @@ const StairsSelectDialog: React.FC<MapToolsDialogProps> = ({
           <AccordionItem value="item-1">
             <AccordionTrigger>Связанные лестницы и этажи</AccordionTrigger>
             <AccordionContent>
-              {selectedOtherStairsIds.map(id => {
+              {selectedOtherStairsIds.map((id) => {
                 const connectedStairs = figmaMapConfig.config.objects.find(
-                  object => object.id === id
+                  (object) => object.id === id
                 )
                 return (
                   <div key={id}>
